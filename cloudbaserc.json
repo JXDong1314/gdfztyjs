@@ -1,0 +1,23 @@
+{
+  "version": "2.0",
+  "envId": "{{env.ENV_ID}}",
+  "framework": {
+    "name": "static",
+    "plugins": {
+      "client": {
+        "inputs": {
+          "buildCommand": "",
+          "outputPath": "./",
+          "cloudPath": "/",
+          "ignore": [
+            ".git",
+            ".github",
+            "node_modules",
+            ".DS_Store"
+          ]
+        }
+      }
+    }
+  }
+}
+

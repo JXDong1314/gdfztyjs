@@ -1,0 +1,22 @@
+{
+  "name": "general-technology-quiz-system",
+  "version": "1.0.0",
+  "description": "通用技术刷题系统 - 广州市通用技术学业水平考试在线练习系统",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -p 8080 -c-1",
+    "preview": "npx http-server -p 8080",
+    "deploy": "cloudbase hosting deploy ./ -e $ENV_ID"
+  },
+  "keywords": [
+    "quiz",
+    "education",
+    "exam"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudbase/cli": "^1.9.0"
+  }
+}
+
