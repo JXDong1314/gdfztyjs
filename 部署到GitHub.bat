@@ -155,11 +155,18 @@ echo.
 
 git add .
 git commit -m "更新内容 - %date% %time%"
-git push
+
+echo 📤 正在推送到 GitHub...
+git push -u origin main
 
 if errorlevel 1 (
     echo.
-    echo ❌ 更新失败
+    echo ❌ 推送失败
+    echo.
+    echo 可能是网络问题，请：
+    echo    1. 检查网络连接
+    echo    2. 稍后重试
+    echo    3. 或使用网页上传方式
     echo.
     pause
     exit /b 1

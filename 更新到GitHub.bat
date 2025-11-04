@@ -50,15 +50,20 @@ if errorlevel 1 (
 
 REM 推送
 echo 📤 推送到 GitHub...
-git push
+git push -u origin main
 
 if errorlevel 1 (
     echo.
     echo ❌ 推送失败
     echo.
-    echo 💡 请检查：
-    echo    1. 网络连接是否正常
-    echo    2. 是否有仓库的写入权限
+    echo 可能的原因：
+    echo    1. 网络连接问题（GitHub在国内可能不稳定）
+    echo    2. 权限问题
+    echo.
+    echo 解决方法：
+    echo    1. 重试几次
+    echo    2. 使用网页上传（更稳定）
+    echo    3. 配置代理
     echo.
     pause
     exit /b 1
