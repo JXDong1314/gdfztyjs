@@ -1331,8 +1331,14 @@
 
         .ai-input-area {
             display: flex;
+            flex-direction: column;
             gap: 10px;
-            align-items: flex-end;
+        }
+
+        .ai-button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
         }
 
         .ai-input {
@@ -1548,7 +1554,11 @@
                 <div class="ai-chat-container">
                     <div class="ai-info-card">
                         <p>💡 欢迎使用AI答疑助手！我可以帮您解答<strong>高中通用技术</strong>相关的问题。</p>
-                       
+                        <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                            <strong>注意！AI回答仅供参考，不一定准确，以课本为准。</strong><br>
+                            📝 <strong>简单提问</strong>：快速获得简短答案（不超过100字）<br>
+                            📖 <strong>详细提问</strong>：获得详细解释和举例说明
+                        </p>
                     </div>
                     
                    
@@ -1556,10 +1566,16 @@
                     <div id="aiChatMessages" class="ai-chat-messages"></div>
                     <div class="ai-input-area">
                         <textarea id="aiInput" class="ai-input" placeholder="请输入您的问题..." rows="3"></textarea>
-                        <button id="aiSendBtn" class="ai-send-btn">
-                            <span id="aiSendText">发送提问</span>
-                            <span id="aiLoadingText" style="display: none;">正在思考...</span>
-                        </button>
+                        <div class="ai-button-group">
+                            <button id="aiSimpleSendBtn" class="ai-send-btn">
+                                <span id="aiSimpleSendText">简单提问</span>
+                                <span id="aiSimpleLoadingText" style="display: none;">正在思考...</span>
+                            </button>
+                            <button id="aiDetailSendBtn" class="ai-send-btn">
+                                <span id="aiDetailSendText">详细提问</span>
+                                <span id="aiDetailLoadingText" style="display: none;">正在思考...</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -7237,6 +7253,11 @@
                                     </div>
                                 </div>
                             ` : ''}
+                            <div style="text-align: left; margin-top: 15px;">
+                                <button class="btn btn-primary" style="padding: 10px 20px; background: linear-gradient(135deg, #667eea, #764ba2); border: none;" onclick="askAIAboutSubQuestion('${sq.id}', '${parentId}')">
+                                    🤖 问AI
+                                </button>
+                            </div>
                         ` : ''}
                     </div>
                 `;
@@ -7301,6 +7322,11 @@
                                     </div>
                                 </div>
                             ` : ''}
+                            <div style="text-align: left; margin-top: 15px;">
+                                <button class="btn btn-primary" style="padding: 10px 20px; background: linear-gradient(135deg, #667eea, #764ba2); border: none;" onclick="askAIAboutSubQuestion('${sq.id}', '${parentId}')">
+                                    🤖 问AI
+                                </button>
+                            </div>
                         ` : ''}
                     </div>
                 `;
@@ -7519,6 +7545,11 @@
                         <p><strong>知识点：</strong>${question.knowledge}</p>
                     </div>
                     ${explanationHtml}
+                    <div style="text-align: left; margin-top: 15px;">
+                        <button class="btn btn-primary" style="padding: 10px 20px; background: linear-gradient(135deg, #667eea, #764ba2); border: none;" onclick="askAIAboutCurrentQuestion()">
+                            🤖 问AI
+                        </button>
+                    </div>
                 `;
             }
 
@@ -7970,6 +8001,245 @@
             console.log('已跳转到AI答疑，题目内容已自动填充');
         }
 
+        // 向AI提问综合题小题
+        function askAIAboutSubQuestion(subQuestionId, parentId) {
+            if (!currentPaper) {
+                alert('请先选择试卷');
+                return;
+            }
+            
+            const questions = papers[currentPaper];
+            const parentQuestion = questions.find(q => q.id === parentId);
+            
+            if (!parentQuestion || parentQuestion.type !== 'comprehensive') {
+                alert('未找到综合题');
+                return;
+            }
+            
+            const subQuestion = parentQuestion.subQuestions.find(sq => sq.id === subQuestionId);
+            
+            if (!subQuestion) {
+                alert('未找到小题');
+                return;
+            }
+
+            // 清理题目文本
+            const cleanText = (text) => {
+                return text
+                    .replace(/!\[.*?\]\(.*?\)/g, '[图片]')
+                    .replace(/<[^>]*>/g, '')
+                    .trim();
+            };
+
+            // 格式化题目内容
+            let questionText = `# 综合题小题求助\n\n`;
+            
+            if (subQuestion.knowledge) {
+                questionText += `**知识点：** ${subQuestion.knowledge}\n\n`;
+            }
+            
+            // 添加综合题背景信息
+            questionText += `## 综合题背景\n`;
+            if (parentQuestion.title) {
+                questionText += `**题目：** ${cleanText(parentQuestion.title)}\n\n`;
+            }
+            if (parentQuestion.description) {
+                questionText += `${cleanText(parentQuestion.description)}\n\n`;
+            }
+            
+            // 添加小题内容
+            questionText += `## 小题\n${cleanText(subQuestion.question)}\n\n`;
+            
+            if (subQuestion.options && subQuestion.options.length > 0) {
+                questionText += `## 选项\n`;
+                subQuestion.options.forEach(opt => {
+                    questionText += `${cleanText(opt)}\n`;
+                });
+                questionText += '\n';
+            }
+            
+            questionText += `---\n\n`;
+            questionText += `**✅ 正确答案：** ${subQuestion.answer}\n\n`;
+            
+            if (userAnswers[subQuestion.id]) {
+                questionText += `**❌ 我的答案：** ${userAnswers[subQuestion.id]}\n\n`;
+            }
+            
+            questionText += `## 我的问题\n\n`;
+            questionText += `请帮我解释这道小题：\n`;
+            questionText += `1. 正确答案的原理和依据\n`;
+            questionText += `2. 解题的思路和方法\n`;
+            if (userAnswers[subQuestion.id] && userAnswers[subQuestion.id] !== subQuestion.answer) {
+                questionText += `3. 我为什么会做错（常见误区）\n`;
+            }
+
+            switchTab('ai');
+            
+            const aiInput = document.getElementById('aiInput');
+            if (aiInput) {
+                aiInput.value = questionText;
+                aiInput.focus();
+                aiInput.scrollTop = aiInput.scrollHeight;
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 向AI提问当前题目
+        function askAIAboutCurrentQuestion() {
+            if (!currentPaper) {
+                alert('请先选择试卷');
+                return;
+            }
+            
+            const questions = papers[currentPaper];
+            const question = questions[currentQuestionIndex];
+            
+            if (!question) {
+                alert('未找到当前题目');
+                return;
+            }
+
+            // 清理题目文本
+            const cleanText = (text) => {
+                return text
+                    .replace(/!\[.*?\]\(.*?\)/g, '[图片]')
+                    .replace(/<[^>]*>/g, '')
+                    .trim();
+            };
+
+            // 格式化题目内容
+            let questionText = `# 题目求助\n\n`;
+            
+            if (question.knowledge) {
+                questionText += `**知识点：** ${question.knowledge}\n\n`;
+            }
+            
+            questionText += `## 题目\n${cleanText(question.question)}\n\n`;
+            
+            if (question.options && question.options.length > 0) {
+                questionText += `## 选项\n`;
+                question.options.forEach(opt => {
+                    questionText += `${cleanText(opt)}\n`;
+                });
+                questionText += '\n';
+            }
+            
+            questionText += `---\n\n`;
+            questionText += `**✅ 正确答案：** ${question.answer}\n\n`;
+            
+            if (userAnswers[question.id]) {
+                questionText += `**❌ 我的答案：** ${userAnswers[question.id]}\n\n`;
+            }
+            
+            questionText += `## 我的问题\n\n`;
+            questionText += `请帮我解释这道题：\n`;
+            questionText += `1. 正确答案的原理和依据\n`;
+            questionText += `2. 解题的思路和方法\n`;
+            if (userAnswers[question.id] && userAnswers[question.id] !== question.answer) {
+                questionText += `3. 我为什么会做错（常见误区）\n`;
+            }
+
+            switchTab('ai');
+            
+            const aiInput = document.getElementById('aiInput');
+            if (aiInput) {
+                aiInput.value = questionText;
+                aiInput.focus();
+                aiInput.scrollTop = aiInput.scrollHeight;
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 向AI提问知识点中的题目
+        function askAIAboutKnowledgeQuestion(questionId, knowledgeName) {
+            // 从所有试卷中查找题目
+            let question = null;
+            let foundInPaper = null;
+            
+            Object.keys(papers).forEach(paperName => {
+                papers[paperName].forEach(q => {
+                    if (q.id === questionId) {
+                        question = q;
+                        foundInPaper = paperName;
+                    }
+                    // 检查综合题的小题
+                    if (q.type === 'comprehensive' && q.subQuestions) {
+                        q.subQuestions.forEach(sq => {
+                            if (sq.id === questionId) {
+                                question = sq;
+                                question.parentInfo = {
+                                    title: q.title,
+                                    description: q.description
+                                };
+                                foundInPaper = paperName;
+                            }
+                        });
+                    }
+                });
+            });
+            
+            if (!question) {
+                alert('未找到该题目');
+                return;
+            }
+
+            // 清理题目文本
+            const cleanText = (text) => {
+                return text
+                    .replace(/!\[.*?\]\(.*?\)/g, '[图片]')
+                    .replace(/<[^>]*>/g, '')
+                    .trim();
+            };
+
+            // 格式化题目内容
+            let questionText = `# 知识点题目求助\n\n`;
+            questionText += `**知识点：** ${knowledgeName}\n\n`;
+            questionText += `**来源：** ${foundInPaper}\n\n`;
+            
+            // 如果是综合题小题，添加背景信息
+            if (question.parentInfo) {
+                questionText += `## 综合题背景\n`;
+                questionText += `${cleanText(question.parentInfo.title || '')}\n`;
+                if (question.parentInfo.description) {
+                    questionText += `${cleanText(question.parentInfo.description)}\n`;
+                }
+                questionText += `\n`;
+            }
+            
+            questionText += `## 题目\n${cleanText(question.question)}\n\n`;
+            
+            if (question.options && question.options.length > 0) {
+                questionText += `## 选项\n`;
+                question.options.forEach(opt => {
+                    questionText += `${cleanText(opt)}\n`;
+                });
+                questionText += '\n';
+            }
+            
+            questionText += `---\n\n`;
+            questionText += `**✅ 正确答案：** ${question.answer}\n\n`;
+            
+            questionText += `## 我的问题\n\n`;
+            questionText += `请帮我详细解释这道题的知识点和解题思路。\n`;
+
+            // 关闭知识点模态框
+            closeKnowledgeModal();
+            
+            // 切换到AI答疑标签页
+            switchTab('ai');
+            
+            const aiInput = document.getElementById('aiInput');
+            if (aiInput) {
+                aiInput.value = questionText;
+                aiInput.focus();
+                aiInput.scrollTop = aiInput.scrollHeight;
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         // 渲染知识点
         function renderKnowledge() {
             const progress = storage.getKnowledgeProgress();
@@ -8288,6 +8558,11 @@
                         <div class="knowledge-question-answer">
                             <strong>答案：</strong>${q.answer}
                         </div>
+                        <div style="text-align: left; margin-top: 10px;">
+                            <button class="btn btn-primary" style="padding: 6px 15px; font-size: 13px; background: linear-gradient(135deg, #667eea, #764ba2); border: none;" onclick="askAIAboutKnowledgeQuestion('${q.id}', '${knowledgeName}')">
+                                🤖 问AI
+                            </button>
+                        </div>
                     </div>
                 `;
             }).join('') : `
@@ -8590,19 +8865,21 @@
                 }
                 
                 // 测试按钮是否存在
-                const sendBtn = document.getElementById('aiSendBtn');
-                console.log('发送按钮存在:', !!sendBtn);
+                const simpleSendBtn = document.getElementById('aiSimpleSendBtn');
+                const detailSendBtn = document.getElementById('aiDetailSendBtn');
+                console.log('简单提问按钮存在:', !!simpleSendBtn);
+                console.log('详细提问按钮存在:', !!detailSendBtn);
                 
                 // 添加测试按钮功能的提示
-                if (sendBtn) {
-                    console.log('您可以尝试点击"发送提问"按钮进行测试');
+                if (simpleSendBtn && detailSendBtn) {
+                    console.log('您可以尝试点击"简单提问"或"详细提问"按钮进行测试');
                 }
             }
         }
 
         // 发送AI问题
-        async function sendAIQuestion() {
-            console.log('sendAIQuestion 被调用');
+        async function sendAIQuestion(isSimple = false) {
+            console.log('sendAIQuestion 被调用, 模式:', isSimple ? '简单提问' : '详细提问');
             
             const input = document.getElementById('aiInput');
             const question = input.value.trim();
@@ -8614,16 +8891,28 @@
                 return;
             }
 
-            // 禁用按钮和输入框
-            const sendBtn = document.getElementById('aiSendBtn');
-            const sendText = document.getElementById('aiSendText');
-            const loadingText = document.getElementById('aiLoadingText');
+            // 根据提问类型选择对应的按钮元素
+            const simpleSendBtn = document.getElementById('aiSimpleSendBtn');
+            const detailSendBtn = document.getElementById('aiDetailSendBtn');
+            const simpleSendText = document.getElementById('aiSimpleSendText');
+            const detailSendText = document.getElementById('aiDetailSendText');
+            const simpleLoadingText = document.getElementById('aiSimpleLoadingText');
+            const detailLoadingText = document.getElementById('aiDetailLoadingText');
             
             console.log('开始禁用按钮');
-            sendBtn.disabled = true;
+            // 禁用两个按钮和输入框
+            simpleSendBtn.disabled = true;
+            detailSendBtn.disabled = true;
             input.disabled = true;
-            sendText.style.display = 'none';
-            loadingText.style.display = 'inline';
+            
+            // 显示对应按钮的加载状态
+            if (isSimple) {
+                simpleSendText.style.display = 'none';
+                simpleLoadingText.style.display = 'inline';
+            } else {
+                detailSendText.style.display = 'none';
+                detailLoadingText.style.display = 'inline';
+            }
 
             // 添加用户消息
             addMessage('user', question);
@@ -8631,8 +8920,8 @@
 
             try {
                 console.log('开始调用豆包API');
-                // 调用豆包API
-                const response = await callDoubaoAPI(question);
+                // 调用豆包API，传递提问模式
+                const response = await callDoubaoAPI(question, isSimple);
                 console.log('API响应成功:', response);
                 addMessage('assistant', response);
             } catch (error) {
@@ -8641,10 +8930,13 @@
             } finally {
                 // 恢复按钮和输入框
                 console.log('恢复按钮状态');
-                sendBtn.disabled = false;
+                simpleSendBtn.disabled = false;
+                detailSendBtn.disabled = false;
                 input.disabled = false;
-                sendText.style.display = 'inline';
-                loadingText.style.display = 'none';
+                simpleSendText.style.display = 'inline';
+                detailSendText.style.display = 'inline';
+                simpleLoadingText.style.display = 'none';
+                detailLoadingText.style.display = 'none';
             }
         }
 
@@ -8723,13 +9015,15 @@
         }
 
         // 调用豆包API
-        async function callDoubaoAPI(userQuestion) {
+        async function callDoubaoAPI(userQuestion, isSimple = false) {
             // 使用配置的API信息
             const apiKey = aiConfig.apiKey;
             const modelName = aiConfig.endpoint;
             
             // 系统提示词（添加在第一条消息中）
-            const systemPrompt = `你是一位专业的高中通用技术教师助手。你的职责是帮助学生理解和学习高中通用技术课程内容。
+            let systemPrompt = '';
+            /*
+            systemPrompt = `你是一位专业的高中通用技术教师助手。你的职责是帮助学生理解和学习高中通用技术课程内容。
 
 你的知识范围限定在以下主题：
 1. 技术的性质：技术的价值、技术的性质、技术的发明与革新、技术与设计的关系、知识产权
@@ -8745,8 +9039,24 @@
 - 适当举例说明，帮助学生理解
 - 如果问题超出通用技术范围，礼貌地告知学生这不在你的专业范围内
 - 鼓励学生独立思考，提供引导而非直接答案（除非是概念性问题）
-
 `;
+            */
+
+            // 如果是简单提问模式，添加字数限制
+            if (isSimple) {
+                systemPrompt = `你是一位高中通用技术教师助手。
+
+🚨 当前为简单提问模式，你必须严格遵守以下规则：
+1. 回答不超过100字（强制限制）
+2. 用简单直白的语言回答
+3. 如果无法用100字说清楚，只说最重要的部分
+4.注意换行
+
+知识范围：高中通用技术（技术性质、设计、结构、流程、系统、控制）
+
+现在请用不超过100字回答下面的问题。
+`;
+            }
 
             // 构建消息历史
             const messages = [];
@@ -8754,9 +9064,10 @@
             // 如果是第一次对话，添加系统提示
             if (aiChatHistory.length === 0) {
                 // 第一条消息包含系统提示
+                const questionPrefix = isSimple ? '【简答模式-限100字】学生的问题：' : '学生的问题：';
                 messages.push({
                     role: 'user',
-                    content: systemPrompt + '学生的问题：' + userQuestion
+                    content: systemPrompt + questionPrefix + userQuestion
                 });
             } else {
                 // 添加历史对话（最多10条，即5轮）
@@ -8768,10 +9079,14 @@
                     });
                 });
 
-                // 添加当前问题
+                // 添加当前问题（如果是简单模式，在问题前添加强制限制）
+                let questionContent = userQuestion;
+                if (isSimple) {
+                    questionContent = `🚨 简答模式：请用不超过100字回答以下问题，不要展开，只说要点。\n\n问题：${userQuestion}`;
+                }
                 messages.push({
                     role: 'user',
-                    content: userQuestion
+                    content: questionContent
                 });
             }
 
@@ -8779,6 +9094,12 @@
                 model: modelName,
                 messages: messages
             };
+            
+            // 如果是简单提问模式，添加token限制（100字大约150-200个token）
+            if (isSimple) {
+                requestBody.max_tokens = 200;  // 限制最大输出token数
+                requestBody.temperature = 0.3; // 降低温度，让回答更确定和简洁
+            }
 
             console.log('请求参数:', JSON.stringify(requestBody, null, 2));
 
@@ -8967,27 +9288,39 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM加载完成，初始化AI答疑事件');
             
-            // 绑定发送按钮点击事件
-            const aiSendBtn = document.getElementById('aiSendBtn');
-            if (aiSendBtn) {
-                console.log('找到发送按钮，绑定点击事件');
-                aiSendBtn.addEventListener('click', function() {
-                    console.log('发送按钮被点击');
-                    sendAIQuestion();
+            // 绑定简单提问按钮点击事件
+            const aiSimpleSendBtn = document.getElementById('aiSimpleSendBtn');
+            if (aiSimpleSendBtn) {
+                console.log('找到简单提问按钮，绑定点击事件');
+                aiSimpleSendBtn.addEventListener('click', function() {
+                    console.log('简单提问按钮被点击');
+                    sendAIQuestion(true);
                 });
             } else {
-                console.error('未找到AI发送按钮');
+                console.error('未找到简单提问按钮');
             }
             
-            // 支持回车发送（Ctrl+Enter换行）
+            // 绑定详细提问按钮点击事件
+            const aiDetailSendBtn = document.getElementById('aiDetailSendBtn');
+            if (aiDetailSendBtn) {
+                console.log('找到详细提问按钮，绑定点击事件');
+                aiDetailSendBtn.addEventListener('click', function() {
+                    console.log('详细提问按钮被点击');
+                    sendAIQuestion(false);
+                });
+            } else {
+                console.error('未找到详细提问按钮');
+            }
+            
+            // 支持回车发送（Ctrl+Enter换行，默认使用详细提问）
             const aiInput = document.getElementById('aiInput');
             if (aiInput) {
                 console.log('找到输入框，绑定回车事件');
                 aiInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey) {
                         e.preventDefault();
-                        console.log('回车键触发发送');
-                        sendAIQuestion();
+                        console.log('回车键触发发送（详细提问）');
+                        sendAIQuestion(false);
                     }
                 });
             } else {
